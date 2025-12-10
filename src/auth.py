@@ -382,7 +382,7 @@ def get_credentials(allow_oauth_flow=True):
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri="http://localhost:8080"
+        redirect_uri="http://localhost:8082"
     )
     
     flow.oauth2session.scope = SCOPES
@@ -400,7 +400,7 @@ def get_credentials(allow_oauth_flow=True):
     print(f"{'='*80}\n")
     logging.info(f"Please open this URL in your browser to log in: {auth_url}")
     
-    server = HTTPServer(("", 8080), _OAuthCallbackHandler)
+    server = HTTPServer(("", 8082), _OAuthCallbackHandler)
     server.handle_request()
     
     auth_code = _OAuthCallbackHandler.auth_code
