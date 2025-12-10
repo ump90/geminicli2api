@@ -70,8 +70,11 @@ def openai_request_to_gemini(openai_request: OpenAIChatCompletionRequest) -> Dic
                                     mime_type = ""
                                     if ":" in header:
                                         mime_type = header.split(":", 1)[1].split(";", 1)[0] or ""
-                                    # Only convert to inlineData if it's an image
-                                    if mime_type.startswith("image/"):
+                                    # Convert to inlineData if it's a supported media type
+                                    if (mime_type.startswith("image/") or
+                                        mime_type.startswith("video/") or
+                                        mime_type.startswith("audio/") or
+                                        mime_type == "application/pdf"):
                                         parts.append({
                                             "inlineData": {
                                                 "mimeType": mime_type,
@@ -79,7 +82,7 @@ def openai_request_to_gemini(openai_request: OpenAIChatCompletionRequest) -> Dic
                                             }
                                         })
                                     else:
-                                        # Non-image data URIs: keep as markdown text
+                                        # Unsupported data URIs: keep as markdown text
                                         parts.append({"text": text_value[m.start():m.end()]})
                                 except Exception:
                                     # Fallback: keep original markdown as text if parsing fails
@@ -132,8 +135,11 @@ def openai_request_to_gemini(openai_request: OpenAIChatCompletionRequest) -> Dic
                         mime_type = ""
                         if ":" in header:
                             mime_type = header.split(":", 1)[1].split(";", 1)[0] or ""
-                        # Only convert to inlineData if it's an image
-                        if mime_type.startswith("image/"):
+                        # Convert to inlineData if it's a supported media type
+                        if (mime_type.startswith("image/") or
+                            mime_type.startswith("video/") or
+                            mime_type.startswith("audio/") or
+                            mime_type == "application/pdf"):
                             parts.append({
                                 "inlineData": {
                                     "mimeType": mime_type,
@@ -141,7 +147,7 @@ def openai_request_to_gemini(openai_request: OpenAIChatCompletionRequest) -> Dic
                                 }
                             })
                         else:
-                            # Non-image data URIs: keep as markdown text
+                            # Unsupported data URIs: keep as markdown text
                             parts.append({"text": text[m.start():m.end()]})
                     except Exception:
                         # Fallback: keep original markdown as text if parsing fails
@@ -280,17 +286,24 @@ def gemini_response_to_openai(gemini_response: Dict[str, Any], model: str) -> Di
                     content_parts.append(part.get("text", ""))
                 continue
 
-            # Inline image data -> embed as Markdown data URI
+            # Inline media data -> embed as Markdown data URI
             inline = part.get("inlineData")
             if inline and inline.get("data"):
-                mime = inline.get("mimeType") or "image/png"
-                if isinstance(mime, str) and mime.startswith("image/"):
-                    data_b64 = inline.get("data")
-                    content_parts.append(f"![image](data:{mime};base64,{data_b64})")
+                mime = inline.get("mimeType") or "application/octet-stream"
+                data_b64 = inline.get("data")
+                if isinstance(mime, str):
+                    if mime.startswith("image/"):
+                        content_parts.append(f"![image](data:{mime};base64,{data_b64})")
+                    elif mime.startswith("video/"):
+                        content_parts.append(f"![video](data:{mime};base64,{data_b64})")
+                    elif mime.startswith("audio/"):
+                        content_parts.append(f"![audio](data:{mime};base64,{data_b64})")
+                    elif mime == "application/pdf":
+                        content_parts.append(f"![pdf](data:{mime};base64,{data_b64})")
                 continue
 
         content = "\n\n".join([p for p in content_parts if p is not None])
-        
+
         # Build message object
         message = {
             "role": role,
@@ -351,17 +364,24 @@ def gemini_stream_chunk_to_openai(gemini_chunk: Dict[str, Any], model: str, resp
                     content_parts.append(part.get("text", ""))
                 continue
 
-            # Inline image data -> embed as Markdown data URI
+            # Inline media data -> embed as Markdown data URI
             inline = part.get("inlineData")
             if inline and inline.get("data"):
-                mime = inline.get("mimeType") or "image/png"
-                if isinstance(mime, str) and mime.startswith("image/"):
-                    data_b64 = inline.get("data")
-                    content_parts.append(f"![image](data:{mime};base64,{data_b64})")
+                mime = inline.get("mimeType") or "application/octet-stream"
+                data_b64 = inline.get("data")
+                if isinstance(mime, str):
+                    if mime.startswith("image/"):
+                        content_parts.append(f"![image](data:{mime};base64,{data_b64})")
+                    elif mime.startswith("video/"):
+                        content_parts.append(f"![video](data:{mime};base64,{data_b64})")
+                    elif mime.startswith("audio/"):
+                        content_parts.append(f"![audio](data:{mime};base64,{data_b64})")
+                    elif mime == "application/pdf":
+                        content_parts.append(f"![pdf](data:{mime};base64,{data_b64})")
                 continue
 
         content = "\n\n".join([p for p in content_parts if p is not None])
-        
+
         # Build delta object
         delta = {}
         if content:
