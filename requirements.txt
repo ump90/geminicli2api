@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-requests
+requests[socks]
 python-dotenv
 google-auth-oauthlib
 pydantic

@@ -17,7 +17,8 @@ from .config import (
     get_base_model_name,
     is_search_model,
     get_thinking_budget,
-    should_include_thoughts
+    should_include_thoughts,
+    get_proxy_config
 )
 import asyncio
 
@@ -87,13 +88,16 @@ def send_gemini_request(payload: dict, is_streaming: bool = False) -> Response:
 
     final_post_data = json.dumps(final_payload)
 
+    # Get proxy configuration
+    proxies = get_proxy_config()
+
     # Send the request
     try:
         if is_streaming:
-            resp = requests.post(target_url, data=final_post_data, headers=request_headers, stream=True)
+            resp = requests.post(target_url, data=final_post_data, headers=request_headers, stream=True, proxies=proxies)
             return _handle_streaming_response(resp)
         else:
-            resp = requests.post(target_url, data=final_post_data, headers=request_headers)
+            resp = requests.post(target_url, data=final_post_data, headers=request_headers, proxies=proxies)
             return _handle_non_streaming_response(resp)
     except requests.exceptions.RequestException as e:
         logging.error(f"Request to Google API failed: {str(e)}")

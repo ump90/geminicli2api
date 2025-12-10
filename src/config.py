@@ -26,6 +26,26 @@ CREDENTIAL_FILE = os.path.join(SCRIPT_DIR, os.getenv("GOOGLE_APPLICATION_CREDENT
 # Authentication
 GEMINI_AUTH_PASSWORD = os.getenv("GEMINI_AUTH_PASSWORD", "123456")
 
+# Proxy Configuration
+# Supports HTTP, HTTPS, and SOCKS5 proxies
+# Examples:
+#   HTTP:   http://127.0.0.1:7890
+#   HTTPS:  https://127.0.0.1:7890
+#   SOCKS5: socks5://127.0.0.1:1080
+#   With auth: socks5://user:password@127.0.0.1:1080
+PROXY_URL = os.getenv("PROXY_URL", "")
+
+def get_proxy_config():
+    """Get proxy configuration for requests library."""
+    if not PROXY_URL:
+        return None
+
+    # Return proxy config for requests
+    return {
+        "http": PROXY_URL,
+        "https": PROXY_URL,
+    }
+
 # Default Safety Settings for Google API
 DEFAULT_SAFETY_SETTINGS = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
